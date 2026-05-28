@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 미국 주식 투자 대시보드 | SPY · SCHD · QQQ 실시간 분석</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: rgba(20, 27, 45, 0.7);
+            --bg-card-hover: rgba(28, 38, 62, 0.85);
+            --border-card: rgba(51, 65, 85, 0.4);
+            --border-card-hover: rgba(16, 185, 129, 0.4);
+            --primary: #10b981;
+            --primary-hover: #34d399;
+            --primary-glow: rgba(16, 185, 129, 0.15);
+            --text-main: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --accent-green: #34d399;
+            --accent-red: #f43f5e;
+            --accent-purple: #c084fc;
+            --accent-blue: #38bdf8;
+            --accent-amber: #fbbf24;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .finance-bg {
+            background-color: var(--bg-main);
+        }
+        
+        .section-header {
+            font-size: 1.625rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: var(--text-main);
+        }
+        
+        .ticker-container {
+            background: #070a12;
+            border-bottom: 1px solid var(--border-card);
+        }
+        
+        .metric-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .metric-card:hover {
+            border-color: var(--border-card-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px -4px rgba(16, 185, 129, 0.15), 0 0 15px 1px rgba(16, 185, 129, 0.05);
+        }
+        
+        .investor-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .investor-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .sector-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sector-card:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.15);
+        }
+        
+        .nav-active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .tradingview-widget-container {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-card);
+        }
+        
+        .tab-button {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: rgba(22, 29, 48, 0.6);
+            color: var(--text-muted);
+            border: 1px solid var(--border-card);
+        }
+        
+        .tab-button:hover {
+            color: var(--text-main);
+            background-color: rgba(30, 41, 73, 0.8);
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-color: #10b981;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .analysis-bullet {
+            position: relative;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .analysis-bullet:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .modal {
+            animation: modalPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            background: rgba(11, 15, 25, 0.96);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes modalPopIn {
+            from { opacity: 0; transform: scale(0.97) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .dashboard-header {
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-card);
+        }
+        
+        .stock-positive { color: var(--accent-green); }
+        .stock-negative { color: var(--accent-red); }
+        
+        .widget-wrapper {
+            background: #111625;
+            border-radius: 16px;
+            padding: 8px;
+            border: 1px solid var(--border-card);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .finance-accent {
+            color: var(--primary);
+        }
+
+        /* custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="finance-bg text-slate-100">
+    <!-- Header / Navbar -->
+    <nav class="sticky top-0 z-50 dashboard-header">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-x-4">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-11 h-11 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <i class="fas fa-chart-line text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight text-white">WallStreet Insights</h1>
+                            <p class="text-xs text-slate-400 -mt-1">미국 주식 투자 대시보드</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-3">
+                    <div class="hidden md:flex items-center bg-slate-900/80 border border-slate-800 rounded-3xl px-1 py-1 text-sm">
+                        <div class="px-4 py-1.5 flex items-center gap-x-2 text-emerald-400 font-medium">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span>실시간 데이터 • TradingView</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="saveDashboard()" 
+                            class="flex items-center gap-x-2 px-5 py-2.5 bg-slate-800/80 hover:bg-slate-100 text-slate-200 hover:text-slate-900 transition-all rounded-3xl text-sm font-medium border border-slate-700">
+                         <i class="fas fa-download"></i>
+                        <span>HTML 저장</span>
+                    </button>
+                    
+                    <button onclick="window.location.reload()" 
+                            class="flex items-center gap-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-3xl text-sm font-semibold shadow-md shadow-emerald-600/10">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>새로고침</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Ticker Tape -->
+    <div class="ticker-container py-3">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- TradingView Ticker Tape Widget -->
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                {
+                "symbols": [
+                    {"proName": "SPY", "title": "SPY"},
+                    {"proName": "SCHD", "title": "SCHD"},
+                    {"proName": "QQQ", "title": "QQQ"},
+                    {"proName": "XLI", "title": "Industrials"},
+                    {"proName": "XLU", "title": "Utilities"},
+                    {"proName": "XLE", "title": "Energy"},
+                    {"proName": "XLK", "title": "Technology"}
+                ],
+                "showSymbolLogo": true,
+                "colorTheme": "dark",
+                "isTransparent": true,
+                "displayMode": "adaptive",
+                "locale": "ko"
+                }
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero / Quick Overview -->
+    <div class="max-w-7xl mx-auto px-6 pt-10 pb-6">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-y-4 mb-8">
+            <div>
+                <h2 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">SPY · SCHD · QQQ</h2>
+                <p class="text-lg text-slate-300 mt-2">월가 거장들의 투자 기법으로 분석하는 실시간 대시보드</p>
+            </div>
+            <div class="text-xs text-slate-400 flex items-center gap-x-2 bg-slate-900/60 px-4 py-2 rounded-2xl border border-slate-800/80">
+                <i class="fas fa-info-circle text-emerald-400"></i>
+                <span>2026년 5월 기준 시장 로테이션 반영 • 데이터는 교육 목적</span>
+            </div>
+        </div>
+
+        <!-- 3 Main ETF Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-7">
+            <!-- SPY Card -->
+            <div class="metric-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-x-3">
+                                <span class="text-3xl font-extrabold text-white">SPY</span>
+                                <span class="px-2.5 py-1 text-[10px] font-bold bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">S&amp;P 500</span>
+                            </div>
+                            <p class="text-slate-400 text-xs mt-1">SPDR S&amp;P 500 ETF Trust</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                            <i class="fas fa-globe text-xl text-blue-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <div class="text-[11px] uppercase tracking-[0.5px] text-emerald-400 font-bold mb-2">투자 기법 매칭</div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">잭 보글 패시브</span>
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">버핏 광범위 소유</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between text-sm">
+                    <div>
+                        <span class="text-emerald-400 font-bold text-xs">• 광범위 분산</span><br>
+                        <span class="text-xs text-slate-400">저비용 • 장기 보유 최적</span>
+                    </div>
+                    <button onclick="document.getElementById('chart-spy').scrollIntoView({ behavior: 'smooth' })" 
+                            class="text-xs px-4 py-2 bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white border border-slate-700 rounded-2xl font-medium transition-all">
+                        차트 보기 →
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCHD Card -->
+            <div class="metric-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-x-3">
+                                <span class="text-3xl font-extrabold text-white">SCHD</span>
+                                <span class="px-2.5 py-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">배당 우량</span>
+                            </div>
+                            <p class="text-slate-400 text-xs mt-1">Schwab U.S. Dividend Equity ETF</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                            <i class="fas fa-hand-holding-usd text-xl text-emerald-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <div class="text-[11px] uppercase tracking-[0.5px] text-emerald-400 font-bold mb-2">투자 기법 매칭</div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">버핏 품질 + 배당</span>
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">그레이엄 안전마진</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between text-sm">
+                    <div>
+                        <span class="text-emerald-400 font-bold text-xs">• 고배당 + 재무 우량</span><br>
+                        <span class="text-xs text-slate-400">낮은 변동성 • 소득 중심</span>
+                    </div>
+                    <button onclick="document.getElementById('chart-scha').scrollIntoView({ behavior: 'smooth' })" 
+                            class="text-xs px-4 py-2 bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white border border-slate-700 rounded-2xl font-medium transition-all">
+                        차트 보기 →
+                    </button>
+                </div>
+            </div>
+
+            <!-- QQQ Card -->
+            <div class="metric-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-x-3">
+                                <span class="text-3xl font-extrabold text-white">QQQ</span>
+                                <span class="px-2.5 py-1 text-[10px] font-bold bg-violet-500/10 text-violet-400 rounded-full border border-violet-500/20">성장 테크</span>
+                            </div>
+                            <p class="text-slate-400 text-xs mt-1">Invesco QQQ Trust (Nasdaq-100)</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+                            <i class="fas fa-rocket text-xl text-violet-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <div class="text-[11px] uppercase tracking-[0.5px] text-emerald-400 font-bold mb-2">투자 기법 매칭</div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">피터 린치 GARP</span>
+                            <span class="text-xs px-3 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/60 rounded-xl">캐시 우드 혁신</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between text-sm">
+                    <div>
+                        <span class="text-violet-400 font-bold text-xs">• 고성장 기술주 집중</span><br>
+                        <span class="text-xs text-slate-400">높은 변동성 • 혁신 테마</span>
+                    </div>
+                    <button onclick="document.getElementById('chart-qqq').scrollIntoView({ behavior: 'smooth' })" 
+                            class="text-xs px-4 py-2 bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white border border-slate-700 rounded-2xl font-medium transition-all">
+                        차트 보기 →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Charts Section -->
+    <div class="max-w-7xl mx-auto px-6 pb-12" id="charts-section">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <div>
+                <h3 class="section-header flex items-center gap-x-3">
+                    <i class="fas fa-chart-line text-emerald-400"></i> 
+                    <span>실시간 종합 차트</span>
+                </h3>
+                <p class="text-slate-400 text-sm mt-1">TradingView 제공 • 인터랙티브 차트 (줌, 지표 추가 가능)</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex bg-slate-900 border border-slate-800 rounded-3xl p-1 text-sm font-medium shadow-inner">
+                <button onclick="switchChartTab(0)" id="tab-0"
+                        class="tab-button px-6 py-2 rounded-3xl font-bold">SPY</button>
+                <button onclick="switchChartTab(1)" id="tab-1"
+                        class="tab-button px-6 py-2 rounded-3xl font-bold">SCHD</button>
+                <button onclick="switchChartTab(2)" id="tab-2"
+                        class="tab-button px-6 py-2 rounded-3xl font-bold">QQQ</button>
+            </div>
+        </div>
+
+        <!-- Chart Containers -->
+        <div id="chart-container-0" class="chart-pane hidden">
+            <div class="widget-wrapper" id="chart-spy">
+                <div class="tradingview-widget-container" style="height: 600px; width: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: calc(100% - 32px); width: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                    {
+                    "autosize": true,
+                    "symbol": "SPY",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com",
+                    "hide_volume": false,
+                    "hide_legend": false
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        <div id="chart-container-1" class="chart-pane hidden">
+            <div class="widget-wrapper" id="chart-scha">
+                <div class="tradingview-widget-container" style="height: 600px; width: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: calc(100% - 32px); width: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                    {
+                    "autosize": true,
+                    "symbol": "SCHD",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com",
+                    "hide_volume": false
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        <div id="chart-container-2" class="chart-pane hidden">
+            <div class="widget-wrapper" id="chart-qqq">
+                <div class="tradingview-widget-container" style="height: 600px; width: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: calc(100% - 32px); width: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                    {
+                    "autosize": true,
+                    "symbol": "QQQ",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com",
+                    "hide_volume": false
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <p class="text-xs text-slate-500">차트에서 MA(이동평균), RSI, MACD 등 기술적 지표를 추가해 분석하세요. (버핏은 장기 추세, 린치는 성장 확인에 활용)</p>
+        </div>
+    </div>
+
+    <!-- NEW: Individual Stock Search & Comparison Section -->
+    <div class="max-w-7xl mx-auto px-6 pb-16 border-t border-slate-800/80 pt-12" id="custom-search-section">
+        <div class="mb-8">
+            <h3 class="section-header flex items-center gap-x-3">
+                <i class="fas fa-search-dollar text-emerald-400"></i> 
+                <span>개별 종목 실시간 검색 &amp; 비교 분석</span>
+            </h3>
+            <p class="text-slate-300 mt-2">원하는 미국 주식 종목(예: AAPL, TSLA, NVDA, GOOGL, AVGO, PLTR 등)을 실시간으로 검색하고, SPY·SCHD·QQQ 및 주요 섹터와 비교 분석하세요. 월가 거장들의 투자 철학 기반 맞춤 조언 제공.</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-6 items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs uppercase tracking-[0.5px] text-slate-300 font-bold mb-2">종목 티커 입력 (실시간 TradingView 차트)</label>
+                    <div class="flex gap-3">
+                        <input id="custom-ticker-input" type="text" placeholder="예: AAPL 또는 TSLA" 
+                               class="flex-1 bg-[#161d30] border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all rounded-2xl px-5 py-3 text-lg font-mono text-white placeholder:text-slate-500 outline-none">
+                        <button onclick="loadCustomStockChart()" 
+                                class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold transition-all rounded-2xl flex items-center gap-x-2 shadow-md shadow-emerald-600/10">
+                            <i class="fas fa-chart-line"></i>
+                            <span>차트 로드</span>
+                        </button>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500">Enter 키로도 검색 가능 • 대문자 권장</div>
+                </div>
+                
+                <!-- Quick Search Buttons -->
+                <div class="w-full md:w-auto">
+                    <div class="text-xs uppercase tracking-[0.5px] text-slate-300 font-bold mb-2">빠른 검색</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="quickLoadTicker('AAPL')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">AAPL</button>
+                        <button onclick="quickLoadTicker('TSLA')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">TSLA</button>
+                        <button onclick="quickLoadTicker('NVDA')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">NVDA</button>
+                        <button onclick="quickLoadTicker('GOOGL')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">GOOGL</button>
+                        <button onclick="quickLoadTicker('AVGO')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">AVGO</button>
+                        <button onclick="quickLoadTicker('PLTR')" class="px-4 py-1.5 text-xs bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-2xl transition-all font-medium">PLTR</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Chart Container -->
+        <div id="custom-chart-area" class="mb-8 hidden">
+            <div class="flex items-center justify-between mb-3 px-1">
+                <div id="custom-chart-title" class="font-bold text-xl flex items-center gap-x-3 text-white"></div>
+                <button onclick="clearCustomChart()" class="text-xs px-4 py-2 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-2xl flex items-center gap-x-2">
+                    <i class="fas fa-times"></i> <span>차트 닫기</span>
+                </button>
+            </div>
+            <div id="custom-chart-container" class="widget-wrapper" style="height: 600px;"></div>
+            
+            <!-- Quick Parallel Comparison Buttons -->
+            <div id="quick-parallel-buttons" class="mt-4 hidden">
+                <div class="text-xs text-slate-400 mb-2 px-1">빠른 병렬 비교 (2개 차트 나란히)</div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="openQuickParallelComparison('SPY')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700/80 rounded-2xl transition-all">SPY와 병렬 비교</button>
+                    <button onclick="openQuickParallelComparison('SCHD')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700/80 rounded-2xl transition-all">SCHD와 병렬 비교</button>
+                    <button onclick="openQuickParallelComparison('SMH')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700/80 rounded-2xl transition-all">SMH와 병렬 비교</button>
+                    <button onclick="openQuickParallelComparison('LIT')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700/80 rounded-2xl transition-all">LIT와 병렬 비교</button>
+                    <button onclick="openQuickParallelComparison('XLY')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700/80 rounded-2xl transition-all">XLY와 병렬 비교</button>
+                </div>
+            </div>
+            
+            <!-- Investor Analysis for Custom Ticker -->
+            <div id="custom-analysis-panel" class="mt-8 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hidden">
+                <div class="flex items-center gap-x-3 mb-5">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-brain text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-lg text-white">월가 거장 관점 맞춤 분석 &amp; 투자 조언</div>
+                        <div class="text-xs text-slate-400">검색한 종목을 버핏·린치·달리오 등의 철학으로 비교 분석 (확률은 참고용 주관적 추정)</div>
+                    </div>
+                </div>
+                <div id="custom-analysis-content" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- Comparison Tools -->
+        <div class="bg-slate-900/40 border border-slate-800 rounded-3xl p-7">
+            <div class="mb-5">
+                <div class="font-bold text-lg flex items-center gap-x-2 text-white">
+                    <i class="fas fa-balance-scale text-emerald-400"></i>
+                    <span>SPY·SCHD·QQQ + 주요 섹터와 비교 분석</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">아래 종목들을 선택하고 비교 분석을 실행하면 거장 투자자 관점에서 종합 평가를 제공합니다.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6" id="compare-checkboxes">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button onclick="runComparisonAnalysis()" 
+                        class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl flex items-center gap-x-2 shadow-md transition-all">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>선택 종목 비교 분석 실행</span>
+                </button>
+                <button onclick="loadComparisonCharts()" 
+                        class="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white transition-colors rounded-2xl font-medium flex items-center gap-x-2">
+                    <i class="fas fa-th-large"></i>
+                    <span>선택 종목 차트 일괄 로드</span>
+                </button>
+                <button onclick="clearAllCustom()" 
+                        class="px-5 py-3 text-sm bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-colors rounded-2xl flex items-center gap-x-2">
+                    <i class="fas fa-undo"></i>
+                    <span>초기화</span>
+                </button>
+            </div>
+
+            <!-- Comparison Result Panel -->
+            <div id="comparison-result-panel" class="mt-6 hidden bg-slate-900/60 border border-slate-800 rounded-2xl p-7">
+                <div class="font-bold mb-4 flex items-center gap-x-2 text-lg text-white border-b border-slate-800 pb-3">
+                    <i class="fas fa-analytics text-emerald-400"></i> 
+                    <span>거장 투자자 비교 분석 결과</span>
+                </div>
+                <div id="comparison-result-content" class="space-y-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Famous Investors Analysis Section -->
+    <div class="max-w-7xl mx-auto px-6 pb-16 border-t border-slate-800/80 pt-12">
+        <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h3 class="section-header flex items-center gap-x-3">
+                    <i class="fas fa-user-tie text-emerald-400"></i> 
+                    <span>월가 거장들의 투자 기법으로 본 분석</span>
+                </h3>
+                <p class="text-slate-300 mt-2">SPY·SCHD·QQQ 및 <strong>조회한 개별 종목</strong>을 버핏·린치·달리오 등 거장 철학으로 상세 비교 분석</p>
+            </div>
+            
+            <div>
+                <button onclick="showDetailedAnalysisForSearched()" 
+                        class="text-xs px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded-2xl flex items-center gap-x-2 shadow-md">
+                    <i class="fas fa-search text-xs"></i>
+                    <span id="searched-analysis-btn-text">개별 종목 검색 후 상세 거장 분석 보기</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-7">
+            
+            <!-- Warren Buffett -->
+            <div class="investor-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-x-4 mb-6">
+                        <div class="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-globe text-2xl text-amber-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl text-white">워런 버핏</div>
+                            <div class="text-xs text-amber-400">Berkshire Hathaway • 가치 + 품질 투자</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <div class="font-bold text-emerald-400 mb-1.5 text-xs uppercase tracking-[0.5px]">버핏의 핵심 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">경제적 해자(Economic Moat) • 우량 기업을 합리적 가격에 매수 • 장기 보유 • 소유자 마인드</div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="font-bold text-xs mb-2 text-slate-400">SPY 적용</div>
+                            <div class="analysis-bullet text-xs">S&amp;P 500 전체를 '미국 경제'라는 거대한 사업으로 보고 장기 보유. 가장 안전한 핵심 포지션.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">SCHD 적용 <span class="text-amber-400 font-mono">★★★★★</span></div>
+                            <div class="analysis-bullet text-xs">고배당 + 지속 가능한 이익 + 재무 건전성 = 버핏이 사랑하는 '위대한 기업'. 가장 강력 추천.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">QQQ 적용 <span class="text-amber-400 font-mono">★★☆☆☆</span></div>
+                            <div class="analysis-bullet text-xs">고평가 기술주 다수 포함. 안전 마진 부족 가능성 → 비중 제한 권장.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benjamin Graham -->
+            <div class="investor-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-x-4 mb-6">
+                        <div class="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-balance-scale text-2xl text-sky-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl text-white">벤저민 그레이엄</div>
+                            <div class="text-xs text-sky-400">가치 투자의 아버지 • 안전 마진</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <div class="font-bold text-emerald-400 mb-1.5 text-xs uppercase tracking-[0.5px]">그레이엄의 핵심 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">내재가치 대비 할인 매수 (Margin of Safety) • 투기 vs 투자 구분 • 재무제표 분석</div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="font-bold text-xs mb-2 text-slate-400">SPY 적용 <span class="text-amber-400 font-mono">★★★★☆</span></div>
+                            <div class="analysis-bullet text-xs">광범위 분산으로 개별 종목 리스크 감소. 전체 시장의 안전 마진 역할.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">SCHD 적용 <span class="text-amber-400 font-mono">★★★★★</span></div>
+                            <div class="analysis-bullet text-xs">배당 지속성 + 펀더멘털 스크리닝으로 안전 마진 확보. 그레이엄 스타일에 가장 부합.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">QQQ 적용 <span class="text-amber-400 font-mono">★☆☆☆☆</span></div>
+                            <div class="analysis-bullet text-xs">성장 프리미엄으로 고평가 가능성 높음. 안전 마진이 좁을 수 있어 주의 필요.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peter Lynch -->
+            <div class="investor-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-x-4 mb-6">
+                        <div class="w-12 h-12 bg-violet-500/10 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-search text-2xl text-violet-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl text-white">피터 린치</div>
+                            <div class="text-xs text-violet-400">Fidelity Magellan • GARP 투자</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <div class="font-bold text-emerald-400 mb-1.5 text-xs uppercase tracking-[0.5px]">린치의 핵심 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">Growth at Reasonable Price (GARP) • 아는 분야에 투자 • PEG 비율 • 일상 관찰</div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="font-bold text-xs mb-2 text-slate-400">SPY 적용 <span class="text-amber-400 font-mono">★★★☆☆</span></div>
+                            <div class="analysis-bullet text-xs">시장 전체를 보는 '수동적' 접근. 린치의 적극적 분석과는 다소 거리 있음.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">SCHD 적용 <span class="text-amber-400 font-mono">★★★★☆</span></div>
+                            <div class="analysis-bullet text-xs">안정적 성장 + 배당 = 'Stalwart' 스타일. 합리적 가격의 성장 확인 가능.</div>
+                            
+                            <div class="font-bold text-xs mt-3 mb-2 text-slate-400">QQQ 적용 <span class="text-amber-400 font-mono">★★★★★</span></div>
+                            <div class="analysis-bullet text-xs">나스닥 100 = 빠르게 성장하는 기업들. PEG와 성장 스토리를 중점으로 분석하면 최고의 대상.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ray Dalio -->
+            <div class="investor-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-x-4 mb-6">
+                        <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-cogs text-2xl text-rose-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl text-white">레이 달리오</div>
+                            <div class="text-xs text-rose-400">Bridgewater • 원칙 기반 분산</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <div class="font-bold text-emerald-400 mb-1.5 text-xs uppercase tracking-[0.5px]">달리오의 핵심 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">경제 기계 이해 • 리스크 패리티 • All Weather 포트폴리오 • 상관관계 낮은 자산 배분</div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="font-bold text-xs mb-2 text-slate-400">3개 ETF 조합 제안</div>
+                            <div class="analysis-bullet text-xs">SPY (광범위 성장) + SCHD (가치/소득) + QQQ (혁신 성장) = 주식 내에서 성장·가치·스타일 분산 효과 우수.</div>
+                            <div class="analysis-bullet text-xs mt-2">진정한 All Weather를 위해서는 장기채, 금, 원자재 등 비상관 자산 추가 고려 권장.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- John Bogle & Cathie Wood -->
+            <div class="investor-card rounded-3xl p-7 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-x-4 mb-6">
+                        <div class="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-seedling text-2xl text-teal-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xl text-white">잭 보글 &amp; 캐시 우드</div>
+                            <div class="text-xs text-teal-400">패시브 vs 혁신 성장</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <div class="font-bold text-emerald-400 mb-1.5 text-xs">보글의 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">저비용 인덱스 투자 • 시장을 이기려 하지 말고 시장에 투자하라</div>
+                            
+                            <div class="font-bold text-emerald-400 mt-4 mb-1.5 text-xs">우드의 원칙</div>
+                            <div class="text-slate-300 text-xs leading-relaxed">파괴적 혁신 • 고신뢰 장기 투자 • 테마 집중 (AI, 유전체 등)</div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="font-bold text-xs mb-1 text-slate-400">SPY = 보글 최고의 선택</div>
+                            <div class="font-bold text-xs mt-2 mb-1 text-slate-400">QQQ = 우드 스타일 최고의 수단</div>
+                            <div class="font-bold text-xs mt-2 mb-1 text-slate-400">SCHD = 보글 + 버핏 하이브리드 (품질 배당)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-5 bg-slate-900/60 border border-slate-800 rounded-3xl text-xs text-slate-300 leading-relaxed shadow-inner">
+            <strong class="text-emerald-400">종합 의견:</strong> 
+            보수적 투자자 → SCHD + SPY 비중 확대 | 
+            성장 추구 투자자 → QQQ 비중 확대 + SCHD로 안정성 보완 | 
+            균형형 → SPY 40% + SCHD 35% + QQQ 25% 조합 추천 (달리오 분산 철학 반영)
+        </div>
+    </div>
+
+    <!-- Popular Sectors Comparison -->
+    <div class="max-w-7xl mx-auto px-6 pb-16">
+        <div class="mb-8">
+            <h3 class="section-header flex items-center gap-x-3">
+                <i class="fas fa-layer-group text-emerald-400"></i> 
+                <span>2026년 인기 투자 섹터 비교 분석</span>
+            </h3>
+            <p class="text-slate-300 mt-2">AI 인프라 확대, 전력 수요 증가, 실물 경제 로테이션 속 주목받는 섹터 • 거장 기법 매칭</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+            
+            <!-- Industrials XLI -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Industrials</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLI</div>
+                        </div>
+                        <span class="text-[9px] px-2 py-0.5 bg-orange-500/10 text-orange-400 rounded-md font-bold border border-orange-500/20">HOT</span>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        AI 데이터센터 건설, 전력 인프라, 방위·자본 지출 수혜.<br>
+                        2026년 시장 로테이션의 핵심 수혜 섹터.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">버핏의 경제적 해자 + 장기 수혜</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLI",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLI', 'Industrials (산업재)')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Utilities XLU -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Utilities</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLU</div>
+                        </div>
+                        <span class="text-[9px] px-2 py-0.5 bg-sky-500/10 text-sky-400 rounded-md font-bold border border-sky-500/20">AI POWER</span>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        AI 데이터센터 전력 수요 폭증으로 구조적 성장.<br>
+                        안정적 배당 + 성장 하이브리드.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">안정적 현금흐름 + 인플레 헤지</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLU",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLU', 'Utilities (유틸리티)')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Energy XLE -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Energy</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLE</div>
+                        </div>
+                        <span class="text-[9px] px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md font-bold border border-amber-500/20">CYCLICAL</span>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        AI 전력 + 산업 수요 증가. 유가 변동성은 리스크 요인.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">달리오 원자재 헤지 + 린치 분석</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLE",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLE', 'Energy (에너지)')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Technology XLK -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Technology</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLK</div>
+                        </div>
+                        <span class="text-[9px] px-2 py-0.5 bg-violet-500/10 text-violet-400 rounded-md font-bold border border-violet-500/20">CORE</span>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        AI 리더십 여전. 최근 로테이션으로 상대적 약세지만 장기 테마 강력.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">린치/우드 성장주 + 버핏의 해자</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLK",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLK', 'Technology (기술)')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Healthcare XLV -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Healthcare</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLV</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        GLP-1, 혁신 신약, 고령화 수요. 방어적 성장 섹터.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">버핏의 안정성 + 린치의 성장</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLV",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLV', 'Healthcare (헬스케어)')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Communication Services XLC -->
+            <div class="sector-card rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white leading-tight">Comm. Services</div>
+                            <div class="text-emerald-400 text-xs font-mono font-bold mt-0.5">XLC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-slate-300 mb-4 leading-relaxed">
+                        AI + 광고 + 콘텐츠. 빅테크 영향력 강함.
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[10px] text-emerald-400 font-bold mb-1">매칭 기법</div>
+                    <div class="text-xs text-slate-400 mb-4">린치의 성장 + 우드의 혁신 테마</div>
+                    
+                    <div class="widget-wrapper mb-3" style="height: 220px;">
+                        <div class="tradingview-widget-container h-full w-full">
+                            <div class="tradingview-widget-container__widget h-full w-full"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                            {
+                            "symbol": "XLC",
+                            "width": "100%",
+                            "height": "100%",
+                            "colorTheme": "dark",
+                            "isTransparent": true,
+                            "locale": "ko"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showSectorChart('XLC', 'Communication Services')" 
+                            class="w-full text-xs py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 transition-all rounded-xl font-semibold flex items-center justify-center gap-x-1.5 shadow-sm">
+                        <i class="fas fa-chart-line fa-sm"></i> 
+                        <span>상세 차트 보기</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <p class="text-xs text-slate-500">※ 섹터 성과는 시장 상황에 따라 변동됩니다. TradingView 차트에서 최신 데이터를 확인하세요.</p>
+        </div>
+    </div>
+
+    <!-- Portfolio Idea Section -->
+    <div class="max-w-7xl mx-auto px-6 pb-16">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-8">
+            <h4 class="font-bold text-xl mb-6 flex items-center gap-x-3 text-white border-b border-slate-800 pb-4">
+                <i class="fas fa-piggy-bank text-emerald-400"></i> 
+                <span>추천 포트폴리오 아이디어 (거장 기법 기반)</span>
+            </h4>
+            
+            <div class="grid md:grid-cols-3 gap-6 text-sm">
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-emerald-400 mb-4 text-base border-b border-slate-800 pb-2">보수형 (안정 + 소득)</div>
+                        <div class="space-y-3 text-xs mb-6">
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SPY</span>
+                                <span class="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">40%</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SCHD</span>
+                                <span class="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">45%</span>
+                            </div>
+                            <div class="flex justify-between pb-1">
+                                <span class="font-semibold text-slate-200">QQQ</span>
+                                <span class="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">15%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 leading-relaxed bg-[#0b0f19] p-3 rounded-xl border border-slate-800">
+                        버핏 + 그레이엄 + 보글 철학. 낮은 변동성, 안정적 배당.
+                    </div>
+                </div>
+                
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-violet-400 mb-4 text-base border-b border-slate-800 pb-2">균형형 (성장 + 분산)</div>
+                        <div class="space-y-3 text-xs mb-6">
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SPY</span>
+                                <span class="font-mono text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded">35%</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SCHD</span>
+                                <span class="font-mono text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded">35%</span>
+                            </div>
+                            <div class="flex justify-between pb-1">
+                                <span class="font-semibold text-slate-200">QQQ</span>
+                                <span class="font-mono text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded">30%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 leading-relaxed bg-[#0b0f19] p-3 rounded-xl border border-slate-800">
+                        달리오 분산 + 린치 GARP. 성장과 안정성의 균형.
+                    </div>
+                </div>
+                
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-rose-400 mb-4 text-base border-b border-slate-800 pb-2">공격형 (혁신 성장)</div>
+                        <div class="space-y-3 text-xs mb-6">
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SPY</span>
+                                <span class="font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded">25%</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800/40 pb-1.5">
+                                <span class="font-semibold text-slate-200">SCHD</span>
+                                <span class="font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded">20%</span>
+                            </div>
+                            <div class="flex justify-between pb-1">
+                                <span class="font-semibold text-slate-200">QQQ</span>
+                                <span class="font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded">55%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 leading-relaxed bg-[#0b0f19] p-3 rounded-xl border border-slate-800">
+                        캐시 우드 + 피터 린치 스타일. 높은 기대수익, 높은 변동성.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integrated Portfolio Rebalancing Tool -->
+    <div class="max-w-7xl mx-auto px-6 pb-16 border-t border-slate-800 pt-12" id="rebalancing-section">
+        <div class="mb-8">
+            <h3 class="section-header flex items-center gap-x-3">
+                <i class="fas fa-balance-scale text-emerald-400"></i> 
+                <span>포트폴리오 리밸런싱 도구</span>
+            </h3>
+            <p class="text-slate-300 mt-2">현재 보유 종목과 목표 비중을 입력하면 자동으로 괴리도를 계산하고, 구체적인 매수/매도 계획을 제시합니다. 월가 거장 철학을 반영한 실전 도구입니다.</p>
+        </div>
+
+        <!-- Quick Rebalancing for Main Holdings -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-7">
+            <div class="mb-6 pb-3 border-b border-slate-800">
+                <div class="font-semibold text-lg text-white">주요 보유 종목 리밸런싱 시뮬레이션</div>
+                <div class="text-xs text-slate-400 mt-1">SPY, SCHD, QQQ 중심 + 주요 손실/성장 종목의 이상 비중 조율</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Current Holdings Summary -->
+                <div>
+                    <div class="text-sm font-semibold mb-4 text-emerald-400 uppercase tracking-wider">현재 포트폴리오 (예시)</div>
+                    <div class="space-y-4">
+                        <div class="bg-[#161d30]/60 border border-slate-800 p-4 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-mono font-bold text-white text-base">SPY</div>
+                                <div class="text-right">
+                                    <div class="font-bold text-emerald-400">40% <span class="text-xs text-slate-400 font-normal">현재</span></div>
+                                    <div class="text-[10px] text-slate-400">목표 35% (-5% 과비중)</div>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 40%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#161d30]/60 border border-slate-800 p-4 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-mono font-bold text-white text-base">SCHD</div>
+                                <div class="text-right">
+                                    <div class="font-bold text-emerald-400">28% <span class="text-xs text-slate-400 font-normal">현재</span></div>
+                                    <div class="text-[10px] text-slate-400">목표 30% (+2% 저비중)</div>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 28%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#161d30]/60 border border-slate-800 p-4 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-mono font-bold text-white text-base">QQQ</div>
+                                <div class="text-right">
+                                    <div class="font-bold text-emerald-400">18% <span class="text-xs text-slate-400 font-normal">현재</span></div>
+                                    <div class="text-[10px] text-slate-400">목표 20% (+2% 저비중)</div>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 18%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-red-950/20 border border-red-900/40 p-4 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-mono font-bold text-red-300 text-base">TSLL</div>
+                                <div class="text-right">
+                                    <div class="font-bold text-rose-400">9% <span class="text-xs text-red-300 font-normal">현재</span></div>
+                                    <div class="text-[10px] text-rose-400">목표 5% (-4% 과비중!)</div>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex">
+                                <div class="bg-rose-500 h-2 rounded-full" style="width: 9%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rebalancing Suggestion -->
+                <div class="flex flex-col justify-between">
+                    <div>
+                        <div class="text-sm font-semibold mb-4 text-emerald-400 uppercase tracking-wider">리밸런싱 매매 제안 (버핏 + 달리오 관점)</div>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-rose-950/10 border border-rose-900/40 rounded-2xl p-4">
+                                <div class="flex justify-between items-center">
+                                    <div class="font-bold text-rose-400">TSLL 일부 매도</div>
+                                    <span class="text-[10px] px-2.5 py-0.5 bg-rose-500/10 text-rose-400 rounded-full font-bold border border-rose-500/20">SELL</span>
+                                </div>
+                                <p class="text-xs mt-2 text-slate-300 leading-relaxed">버핏: 경제적 해자가 모호하고 고변동성 리스크가 있는 종목은 비중이 한계치를 초과할 때 즉시 부분 매도하여 현금을 확보하십시오.</p>
+                                <div class="mt-2 text-xs font-mono text-rose-400 font-semibold">→ 포트폴리오 전체 비중 중 약 4% 매도 처분 권장</div>
+                            </div>
+
+                            <div class="bg-emerald-950/10 border border-emerald-900/40 rounded-2xl p-4">
+                                <div class="flex justify-between items-center">
+                                    <div class="font-bold text-emerald-400">SPY / SCHD 분할 매수</div>
+                                    <span class="text-[10px] px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full font-bold border border-emerald-500/20">BUY</span>
+                                </div>
+                                <p class="text-xs mt-2 text-slate-300 leading-relaxed">버핏 + 보글: 개별 변동성이 큰 자산을 줄여 확보한 매도 대금의 70% 이상을 SPY나 SCHD 같은 핵심 지수 및 우량 배당주에 재투자하세요.</p>
+                                <div class="mt-2 text-xs font-mono text-emerald-400 font-semibold">→ 확보한 투자금으로 SPY 2~3%, SCHD 2% 추가 매입</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-emerald-950/20 border border-emerald-900/40 text-slate-300 rounded-2xl text-xs leading-relaxed">
+                        <strong class="text-emerald-400">종합 진단 요약:</strong> TSLL 과비중 축소분 → SPY 2% + SCHD 2% 비중 편입. 
+                        달리오의 올웨더 분산 논리에 따라 고위험 성장 자산의 편중을 배제하고 핵심 지주 자산을 강화하는 방향이 최선의 방어책입니다.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center border-t border-slate-800/80 pt-6">
+                <button onclick="openRebalancingTool()" 
+                        class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl flex items-center justify-center gap-x-2 mx-auto transition-all shadow-md">
+                    <i class="fas fa-calculator text-xs"></i>
+                    <span>전체 포트폴리오 리밸런싱 도구 열기 (상세 버전)</span>
+                </button>
+                <div class="text-xs text-slate-400 mt-2">상세 종목 입력, 파이 차트 비교, 정확한 수량 계산이 가능한 풀 버전입니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer / Disclaimer -->
+    <footer class="border-t border-slate-800/80 bg-[#070a12]/80">
+        <div class="max-w-7xl mx-auto px-6 py-8 text-xs text-slate-400">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4">
+                <div class="max-w-3xl leading-relaxed text-slate-500">
+                    <strong class="text-slate-400">면책 조항:</strong> 본 대시보드는 교육 및 정보 제공 목적으로 제작되었습니다. 
+                    투자 조언이 아니며, 과거 성과는 미래 수익을 보장하지 않습니다. 모든 투자에는 원금 손실 위험이 있습니다. 
+                    실제 투자 전 반드시 본인 판단과 전문가 상담을 거치세요.
+                </div>
+                <div class="text-right text-slate-500 leading-normal">
+                    데이터 출처: TradingView, Yahoo Finance, Fidelity, Schwab 등 공개 정보<br>
+                    © 2026 WallStreet Insights Dashboard • Made for educational purposes
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for Sector Detail Chart -->
+    <div id="sector-modal" onclick="if (event.target.id === 'sector-modal') closeModal()" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="bg-[#0f172a] border border-slate-800 rounded-3xl w-[98%] max-w-[1400px] h-[92vh] overflow-hidden modal flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 flex-shrink-0">
+                <div id="modal-title" class="font-bold text-xl text-white"></div>
+                <button onclick="closeModal()" class="text-2xl leading-none text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <div class="flex-grow p-2 overflow-hidden" style="height: 100%; min-height: 300px;">
+                <div id="modal-chart-container" class="tradingview-widget-container h-full w-full"></div>
+            </div>
+            <div class="px-6 py-4 bg-[#090c14] border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between flex-shrink-0">
+                <div>TradingView Advanced Chart • 실시간 데이터</div>
+                <div>차트에서 지표를 추가해 직접 분석해보세요</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script (Fallback accent setter)
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#10b981');
+        }
+        
+        // Chart Tab Switcher
+        let currentTab = 0;
+        
+        function switchChartTab(tabIndex) {
+            // Hide all panes
+            document.querySelectorAll('.chart-pane').forEach(pane => pane.classList.add('hidden'));
+            
+            // Show selected
+            document.getElementById('chart-container-' + tabIndex).classList.remove('hidden');
+            
+            // Update tab styles
+            document.querySelectorAll('.tab-button').forEach((btn, idx) => {
+                if (idx === tabIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            currentTab = tabIndex;
+        }
+        
+        // Initialize first tab active
+        function initChartTabs() {
+            const firstTab = document.getElementById('tab-0');
+            if (firstTab) {
+                firstTab.classList.add('active');
+            }
+            
+            // Show first chart by default
+            const firstPane = document.getElementById('chart-container-0');
+            if (firstPane) firstPane.classList.remove('hidden');
+        }
+        
+        // Modal for sector chart
+        let currentModalScript = null;
+        
+        function showSectorChart(symbol, title) {
+            const modal = document.getElementById('sector-modal');
+            const titleEl = document.getElementById('modal-title');
+            const container = document.getElementById('modal-chart-container');
+            
+            titleEl.innerHTML = `${title} <span class="text-emerald-400 font-mono text-sm">(${symbol})</span>`;
+            container.innerHTML = ''; // Clear previous
+            
+            // Create new widget container
+            const widgetDiv = document.createElement('div');
+            widgetDiv.className = 'tradingview-widget-container h-full w-full';
+            widgetDiv.innerHTML = `
+                <div class="tradingview-widget-container__widget h-full w-full"></div>
+            `;
+            container.appendChild(widgetDiv);
+            
+            // Add the script
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            script.innerHTML = JSON.stringify({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ko",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "calendar": false,
+                "support_host": "https://www.tradingview.com",
+                "hide_volume": false
+            });
+            
+            widgetDiv.appendChild(script);
+            currentModalScript = script;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        // Close detail modal
+        function closeModal() {
+            const modal = document.getElementById('sector-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            
+            const container = document.getElementById('modal-chart-container');
+            container.innerHTML = '';
+        }
+        
+        // Save dashboard as HTML
+        function saveDashboard() {
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '미국주식_투자대시보드_SPY_SCHD_QQQ.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('대시보드가 HTML 파일로 저장되었습니다!');
+        }
+        
+        // Toast notifications
+        function showToast(message) {
+            // Check if there are other toasts and remove them
+            const activeToasts = document.querySelectorAll('.toast-alert');
+            activeToasts.forEach(t => t.remove());
+
+            const toast = document.createElement('div');
+            toast.className = `toast-alert fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-x-3 text-sm z-[200] border border-emerald-500/30 animate-bounce`;
+            toast.innerHTML = `
+                <i class="fas fa-check-circle text-base"></i>
+                <span class="font-medium">${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+        
+        // Keyboard support
+        function initKeyboard() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const chartsSection = document.getElementById('charts-section');
+                    chartsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+                
+                if (e.key.toLowerCase() === 's' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    saveDashboard();
+                }
+            });
+            
+            // Easter egg: press 'b' for Buffett insight
+            let buffettCount = 0;
+            document.addEventListener('keypress', function(e) {
+                if (e.key.toLowerCase() === 'b') {
+                    buffettCount++;
+                    if (buffettCount >= 3) {
+                        showToast('버핏: "가격은 당신이 지불하는 것이고, 가치는 당신이 얻는 것이다."');
+                        buffettCount = 0;
+                    }
+                }
+            });
+        }
+        
+        // Initialize everything
+        function initializeDashboard() {
+            initializeTailwind();
+            initChartTabs();
+            initKeyboard();
+            initComparisonCheckboxes(); 
+
+            // Enable Enter key for custom ticker search
+            const customInput = document.getElementById('custom-ticker-input');
+            if (customInput) {
+                customInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        loadCustomStockChart();
+                    }
+                });
+            }
+            
+            console.log('%c[Dashboard] 미국 주식 투자 대시보드 다크 테마 초기화 완료', 'color:#10b981; font-weight:bold;');
+        }
+
+        // ==================== NEW FUNCTIONS FOR INDIVIDUAL STOCK SEARCH & COMPARISON ====================
+
+        // Quick load ticker
+        function quickLoadTicker(ticker) {
+            document.getElementById('custom-ticker-input').value = ticker;
+            loadCustomStockChart();
+        }
+
+        // Load custom stock chart dynamically
+        function loadCustomStockChart() {
+            const input = document.getElementById('custom-ticker-input');
+            const ticker = input.value.trim().toUpperCase();
+            if (!ticker) {
+                showToast('티커를 입력해주세요 (예: AAPL)');
+                return;
+            }
+
+            const area = document.getElementById('custom-chart-area');
+            const container = document.getElementById('custom-chart-container');
+            const titleEl = document.getElementById('custom-chart-title');
+            const analysisPanel = document.getElementById('custom-analysis-panel');
+
+            // Clear previous
+            container.innerHTML = '';
+            analysisPanel.classList.add('hidden');
+
+            // Set title
+            titleEl.innerHTML = `<span class="font-mono text-white">${ticker}</span> <span class="text-emerald-400 text-sm">실시간 차트 로딩 중...</span>`;
+
+            // Create container with explicit height
+            const widgetWrapper = document.createElement('div');
+            widgetWrapper.className = 'tradingview-widget-container h-full w-full';
+            widgetWrapper.style.height = '600px';
+            widgetWrapper.innerHTML = `
+                <div class="tradingview-widget-container__widget h-full w-full flex items-center justify-center bg-slate-900 rounded-2xl border border-slate-800">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-3xl text-emerald-400 mb-3"></i>
+                        <div class="text-sm text-slate-400">TradingView 차트 로딩 중...</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(widgetWrapper);
+
+            // Small delay for DOM stability then load real widget
+            setTimeout(() => {
+                widgetWrapper.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+                script.innerHTML = JSON.stringify({
+                    "autosize": true,
+                    "symbol": ticker,
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com",
+                    "hide_volume": false
+                });
+                widgetWrapper.appendChild(script);
+
+                // Update title after load starts
+                titleEl.innerHTML = `<span class="font-mono text-white">${ticker}</span> <span class="text-emerald-400 text-sm">실시간 차트</span>`;
+            }, 300);
+
+            // Show area
+            area.classList.remove('hidden');
+            area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Show quick parallel comparison buttons
+            const quickBtns = document.getElementById('quick-parallel-buttons');
+            if (quickBtns) quickBtns.classList.remove('hidden');
+
+            // Set global for cross-section integration
+            currentSearchedTicker = ticker;
+            
+            // Update the main investor section button text
+            const btnText = document.getElementById('searched-analysis-btn-text');
+            if (btnText) {
+                btnText.innerHTML = `현재 조회 종목 <span class="font-mono">${ticker}</span> 상세 거장 분석 보기`;
+            }
+
+            // Generate investor analysis after short delay (for UX)
+            setTimeout(() => {
+                generateCustomInvestorAnalysis(ticker, analysisPanel);
+            }, 1000);
+
+            // Add multi-symbol comparison button for one-graph overlay
+            setTimeout(() => {
+                addMultiCompareButton(ticker, area);
+            }, 1200);
+
+            input.value = '';
+        }
+
+        // Generate tailored investor analysis for custom ticker (Enhanced with Sector Comparison + Investment Opinion)
+        function generateCustomInvestorAnalysis(ticker, panel) {
+            const content = document.getElementById('custom-analysis-content');
+            if (!content) return;
+
+            panel.classList.remove('hidden');
+
+            const upperTicker = ticker.toUpperCase();
+
+            // Dynamic scores and advice based on ticker type
+            let buffettScore = 58, lynchScore = 68, dalioScore = 62;
+            let mainAdvice = '';
+            let probText = '';
+            let investmentOpinion = '';
+            let sectorComparisonHTML = '';
+
+            // === Ticker-specific logic ===
+            if (['AAPL', 'GOOGL', 'MSFT', 'AVGO'].includes(upperTicker)) {
+                buffettScore = 84; lynchScore = 87; dalioScore = 76;
+                mainAdvice = `버핏: 강력한 경제적 해자 보유 우량 기업. 장기 핵심 자산으로 적합.<br>린치: 성장성과 합리적 밸류에이션의 균형(GARP) 우수.`;
+                probText = `버핏 장기 보유 적합도: <span class="font-bold text-emerald-400">84%</span>`;
+                investmentOpinion = `<strong class="text-emerald-400">투자의견: LONG-TERM BUY</strong><br>단기: 모멘텀 유지 시 보유 / 중기: 추가 매수 기회 포착 / 장기: 포트폴리오 핵심 편입 강력 추천`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교 (참고)</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK (기술): <span class="text-emerald-400 font-bold">유사하거나 우위</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SMH (반도체): <span class="text-emerald-400 font-bold">안정성 우위</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SPY: <span class="text-emerald-400 font-bold">방어적 우위</span></div>
+                        </div>
+                    </div>`;
+            } else if (['TSLA', 'NVDA', 'PLTR'].includes(upperTicker)) {
+                buffettScore = 38; lynchScore = 93; dalioScore = 58;
+                mainAdvice = `린치/우드: 파괴적 혁신 + 폭발적 성장 잠재력. 단기 모멘텀 최적.<br>버핏: 고평가 + 변동성으로 안전마진 좁음 → 비중 5~8% 제한 권장.`;
+                probText = `린치 고성장 투자 적합도: <span class="font-bold text-violet-400">93%</span>`;
+                investmentOpinion = `<strong class="text-violet-400">투자의견: TACTICAL BUY / HIGH CONVICTION GROWTH</strong><br>단기: 차트 돌파 시 적극 매수 / 중기: 변동성 감내 가능한 비중 / 장기: 성장 스토리 확인 후 보유`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교 (참고)</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SMH (반도체): <span class="text-violet-400 font-bold">성장성 우위</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK (기술): <span class="text-violet-400 font-bold">유사 고성장</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs LIT (2차전지): <span class="text-emerald-400 font-bold">상대 우위</span></div>
+                        </div>
+                    </div>`;
+            } else if (['SMH', 'NVDA'].includes(upperTicker) || upperTicker.includes('SEM')) {
+                buffettScore = 52; lynchScore = 89; dalioScore = 71;
+                mainAdvice = `린치: AI 반도체 수요 폭발로 최고 성장 섹터. <br>달리오: 기술 성장 + cyclical 성격 고려한 분산 필요.`;
+                probText = `린치 AI/반도체 성장 적합도: <span class="font-bold text-violet-400">89%</span>`;
+                investmentOpinion = `<strong class="text-violet-400">투자의견: AGGRESSIVE GROWTH / OVERWEIGHT</strong><br>단기: AI 모멘텀 지속 시 매수 / 중기: 변동성 대비 분할매수 / 장기: AI 인프라 핵심 자산`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK: <span class="text-violet-400 font-bold">더 공격적 성장</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SPY: <span class="text-emerald-400 font-bold">고변동 고수익</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLY (EV): <span class="text-emerald-400 font-bold">상대 강세</span></div>
+                        </div>
+                    </div>`;
+            } else if (['LIT', 'TSLA'].includes(upperTicker) || upperTicker.includes('BAT')) {
+                buffettScore = 48; lynchScore = 78; dalioScore = 69;
+                mainAdvice = `린치: 전기차·배터리 성장 스토리 강력. <br>버핏: cyclical + 정책 리스크 존재 → 신중 접근.`;
+                probText = `린치 EV/배터리 성장 적합도: <span class="font-bold text-emerald-400">78%</span>`;
+                investmentOpinion = `<strong class="text-emerald-400">투자의견: GROWTH WITH CAUTION</strong><br>단기: 정책·원자재 가격 주시 / 중기: LIT 또는 관련 ETF 분할매수 / 장기: 에너지 전환 테마 핵심`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLY (EV): <span class="text-emerald-400 font-bold">유사 또는 우위</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK: <span class="text-emerald-400 font-bold">성장 방향성 상이</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLE: <span class="text-emerald-400 font-bold">미래 vs 전통</span></div>
+                        </div>
+                    </div>`;
+            } else if (['XLI', 'IYT'].includes(upperTicker)) {
+                buffettScore = 79; lynchScore = 66; dalioScore = 81;
+                mainAdvice = `버핏+달리오: AI 인프라·물류 수요 증가로 장기 안정 성장. <br>린치: cyclical 성격으로 타이밍 중요.`;
+                probText = `버핏/달리오 인프라 적합도: <span class="font-bold text-emerald-400">80%</span>`;
+                investmentOpinion = `<strong class="text-emerald-400">투자의견: CORE HOLD + SELECTIVE ADD</strong><br>단기: 경제 지표 확인 / 중기: 분산 보유 추천 / 장기: AI+인프라 수혜 핵심 섹터`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SPY: <span class="text-emerald-400 font-bold">상대적 안정</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK: <span class="text-emerald-400 font-bold">변동성 우수</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLU: <span class="text-emerald-400 font-bold">유사 인프라</span></div>
+                        </div>
+                    </div>`;
+            } else {
+                buffettScore = 55 + Math.floor(Math.random() * 18);
+                lynchScore = 62 + Math.floor(Math.random() * 22);
+                dalioScore = 58 + Math.floor(Math.random() * 20);
+                mainAdvice = `종목 특성에 따라 버핏(가치·해자) 또는 린치(성장) 관점을 적용. <br>달리오: SPY/SCHD와 함께 분산 보유가 가장 안전한 전략.`;
+                probText = `종합 적합도 (주관적): <span class="font-bold text-emerald-400">${Math.max(buffettScore, lynchScore)}%</span>`;
+                investmentOpinion = `<strong class="text-emerald-400">투자의견: BALANCED / CASE-BY-CASE</strong><br>단기: 차트 기술적 분석 후 / 중기: 펀더멘털 확인 / 장기: SPY/SCHD 비중 확대 후 소량 편입`;
+                sectorComparisonHTML = `
+                    <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div class="text-xs font-semibold mb-2 text-emerald-400">주요 섹터 비교 (일반)</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SPY: <span class="text-emerald-400 font-bold">분산 효과</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs XLK: <span class="text-emerald-400 font-bold">성장 vs 안정</span></div>
+                            <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-800">vs SCHD: <span class="text-emerald-400 font-bold">소득 vs 성장</span></div>
+                        </div>
+                    </div>`;
+            }
+
+            content.innerHTML = `
+                <div class="bg-slate-900/40 rounded-2xl p-5 border border-slate-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-bold text-lg text-white">${ticker} 종목 종합 평가</div>
+                            <div class="text-xs text-slate-400">월가 거장 철학 기반 다각도 분석</div>
+                        </div>
+                        <div class="text-[10px] px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full font-bold border border-emerald-500/20">교육용 참고</div>
+                    </div>
+
+                    <!-- Scores -->
+                    <div class="grid grid-cols-3 gap-3 mb-5">
+                        <div class="bg-[#161d30]/60 border border-slate-800 rounded-xl p-3 text-center">
+                            <div class="text-amber-400 text-xs font-bold">워런 버핏</div>
+                            <div class="text-2xl font-black text-white mt-1">${buffettScore}<span class="text-xs font-bold">%</span></div>
+                            <div class="text-[9px] text-slate-400 mt-1">가치 + 해자</div>
+                        </div>
+                        <div class="bg-[#161d30]/60 border border-slate-800 rounded-xl p-3 text-center">
+                            <div class="text-violet-400 text-xs font-bold">피터 린치</div>
+                            <div class="text-2xl font-black text-white mt-1">${lynchScore}<span class="text-xs font-bold">%</span></div>
+                            <div class="text-[9px] text-slate-400 mt-1">GARP + 스토리</div>
+                        </div>
+                        <div class="bg-[#161d30]/60 border border-slate-800 rounded-xl p-3 text-center">
+                            <div class="text-rose-400 text-xs font-bold">레이 달리오</div>
+                            <div class="text-2xl font-black text-white mt-1">${dalioScore}<span class="text-xs font-bold">%</span></div>
+                            <div class="text-[9px] text-slate-400 mt-1">분산 + 원칙</div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Advice -->
+                    <div class="mb-4">
+                        <div class="text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wide">거장별 핵심 분석</div>
+                        <div class="text-xs leading-relaxed text-slate-300 bg-slate-900/60 p-4 rounded-xl border border-slate-800/80">
+                            ${mainAdvice}
+                        </div>
+                    </div>
+
+                    ${sectorComparisonHTML}
+
+                    <div class="mt-4 text-[11px] font-bold text-emerald-400">${probText}</div>
+                </div>
+
+                <!-- Investment Opinion & Scenarios -->
+                <div class="bg-slate-900/40 rounded-2xl p-5 border border-slate-800">
+                    <div class="font-bold mb-4 flex items-center gap-x-2 text-white">
+                        <i class="fas fa-chart-line text-emerald-400"></i>
+                        <span>투자의견 &amp; 시나리오 분석</span>
+                    </div>
+                    
+                    <div class="mb-4 p-4 bg-slate-900/60 rounded-xl border border-slate-800">
+                        <div class="text-sm font-semibold mb-2 text-slate-200">${investmentOpinion}</div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-xs">
+                            <div class="bg-slate-950/40 border border-slate-850 p-3 rounded-lg">
+                                <div class="font-bold text-emerald-400 mb-1">강세 시나리오 (Bull)</div>
+                                <div class="text-slate-300 leading-normal">AI/성장 모멘텀 지속 + 실적 상회 시 추가 상승 여력. 단기 15~25% 추가 상승 가능성.</div>
+                            </div>
+                            <div class="bg-slate-950/40 border border-slate-850 p-3 rounded-lg">
+                                <div class="font-bold text-amber-400 mb-1">기본 시나리오 (Base)</div>
+                                <div class="text-slate-300 leading-normal">현재 추세 유지. 변동성 구간에서 5~12% 박스권 움직임 예상. 분할매수 기회.</div>
+                            </div>
+                            <div class="bg-slate-950/40 border border-slate-850 p-3 rounded-lg">
+                                <div class="font-bold text-rose-400 mb-1">약세 시나리오 (Bear)</div>
+                                <div class="text-slate-300 leading-normal">거시경제 둔화 또는 경쟁 심화 시 20~35% 조정 가능. 손절라인 사전 설정 권장.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-emerald-400 text-xs font-bold mb-2 uppercase tracking-wide">실전 실행 가이드 (거장 종합)</div>
+                        <ul class="space-y-2 text-xs text-slate-300">
+                            <li class="analysis-bullet"><strong>포지션 사이징</strong>: 전체 포트폴리오의 5~10% 이내. 고성장 종목은 5% 이하로 보수적 접근.</li>
+                            <li class="analysis-bullet"><strong>진입 전략</strong>: MA50/200 지지 확인 후 분할매수. RSI 40~60 구간 선호.</li>
+                            <li class="analysis-bullet"><strong>리스크 관리</strong>: 10~15% 손절라인 설정. 이익 실현은 20~30% 구간에서 일부 차익실현.</li>
+                            <li class="analysis-bullet"><strong>추가 모니터링</strong>: 실적 발표, 경쟁사 동향, 금리·정책 변화, 섹터 로테이션.</li>
+                            <li class="analysis-bullet"><strong>분산 조합 추천</strong>: ${ticker} + SPY (30~40%) + SCHD (20~30%) + 관련 섹터(SMH 또는 LIT) 조합으로 리스크 완화.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed">
+                        ※ 본 분석은 버핏·린치·달리오·그레이엄 철학을 기반으로 한 교육적·주관적 참고 자료입니다. 실제 투자 결정은 최신 재무제표, 본인 투자 목적 및 리스크 허용 범위를 종합적으로 고려하여 본인이 직접 판단하시기 바랍니다.
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize comparison checkboxes
+        function initComparisonCheckboxes() {
+            const container = document.getElementById('compare-checkboxes');
+            if (!container) return;
+
+            const symbols = [
+                { sym: 'SPY', name: 'SPY (S&P500)' },
+                { sym: 'SCHD', name: 'SCHD (배당 우량)' },
+                { sym: 'QQQ', name: 'QQQ (나스닥 성장)' },
+                { sym: 'XLK', name: 'XLK (기술/AI)' },
+                { sym: 'SMH', name: 'SMH (반도체/메모리)' },
+                { sym: 'LIT', name: 'LIT (2차전지/배터리)' },
+                { sym: 'XLY', name: 'XLY (전기차/소비재)' },
+                { sym: 'XLI', name: 'XLI (산업재/물류)' },
+                { sym: 'XLU', name: 'XLU (유틸리티/AI전력)' },
+                { sym: 'XLE', name: 'XLE (에너지)' },
+                { sym: 'XLV', name: 'XLV (헬스케어)' },
+                { sym: 'IYT', name: 'IYT (물류/운송)' }
+            ];
+
+            container.innerHTML = symbols.map(s => `
+                <label class="flex items-center gap-x-2 bg-slate-900/60 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-800 px-3 py-2 rounded-2xl cursor-pointer text-sm transition-all select-none">
+                    <input type="checkbox" value="${s.sym}" class="compare-check accent-emerald-500 w-4 h-4">
+                    <span>${s.name}</span>
+                </label>
+            `).join('');
+        }
+
+        // Run comparison analysis (generates investor-based report)
+        function runComparisonAnalysis() {
+            let checked = Array.from(document.querySelectorAll('.compare-check:checked')).map(cb => cb.value);
+            
+            // Automatically include the currently searched individual stock if exists
+            if (currentSearchedTicker && !checked.includes(currentSearchedTicker)) {
+                checked.unshift(currentSearchedTicker);
+            }
+            
+            if (checked.length === 0) {
+                showToast('비교할 종목을 최소 1개 이상 선택하세요');
+                return;
+            }
+
+            const panel = document.getElementById('comparison-result-panel');
+            const content = document.getElementById('comparison-result-content');
+            panel.classList.remove('hidden');
+
+            let html = `<div class="text-sm text-slate-300">선택된 비교 대상: <span class="font-mono font-bold text-emerald-400">${checked.join(', ')}</span></div>`;
+            html += `<div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+            checked.forEach(sym => {
+                let score = 60 + Math.floor(Math.random() * 25);
+                let style = '린치 성장형';
+                let rec = '적극 편입 고려';
+
+                if (['SPY', 'SCHD'].includes(sym)) {
+                    score = 85 + Math.floor(Math.random() * 10);
+                    style = '버핏 핵심 + 보글 패시브';
+                    rec = '포트폴리오 핵심 자산으로 강력 추천';
+                } else if (['XLI', 'XLU'].includes(sym)) {
+                    style = '버핏+달리오 하이브리드';
+                    rec = '2026년 AI 인프라 수혜로 장기 유망';
+                } else if (sym === 'QQQ' || sym === 'XLK') {
+                    style = '린치/우드 성장형';
+                    rec = '성장 비중 확대 시 적합 (변동성 주의)';
+                }
+
+                html += `
+                    <div class="bg-[#161d30]/60 border border-slate-800 rounded-2xl p-5">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                            <div class="font-extrabold font-mono text-white text-base">${sym}</div>
+                            <div class="text-emerald-400 font-extrabold text-base bg-emerald-500/10 px-2 py-0.5 rounded">${score}%</div>
+                        </div>
+                        <div class="text-xs mt-3 text-slate-400">포트폴리오 성격: <span class="text-slate-200 font-medium">${style}</span></div>
+                        <div class="mt-2 text-xs text-slate-300 leading-relaxed">${rec}</div>
+                        <div class="mt-3 text-[10px] font-bold text-emerald-400/80">종합 적합도 (주관적): ${score}%</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            html += `<div class="mt-5 text-xs text-slate-500">→ 위 평가는 버핏(가치·해자), 린치(GARP), 달리오(분산) 철학을 종합한 주관적 참고 지표입니다. 실제 투자 시 최신 재무 데이터와 본인 리스크 허용 범위를 반드시 확인하세요.</div>`;
+
+            content.innerHTML = html;
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Load multiple comparison charts
+        function loadComparisonCharts() {
+            const checked = Array.from(document.querySelectorAll('.compare-check:checked')).map(cb => cb.value);
+            if (checked.length === 0) {
+                showToast('차트를 로드할 종목을 선택하세요');
+                return;
+            }
+
+            const area = document.getElementById('custom-chart-area');
+            const container = document.getElementById('custom-chart-container');
+            const titleEl = document.getElementById('custom-chart-title');
+
+            container.innerHTML = `<div class="text-center py-8 text-slate-400">여러 종목 차트가 로드됩니다. (각각 별도 위젯)</div>`;
+            titleEl.innerHTML = `선택 종목 비교 차트 (${checked.length}개)`;
+
+            const first = checked[0];
+            container.innerHTML = '';
+
+            const widgetWrapper = document.createElement('div');
+            widgetWrapper.className = 'tradingview-widget-container h-full w-full';
+            widgetWrapper.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+            container.appendChild(widgetWrapper);
+
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            script.innerHTML = JSON.stringify({
+                "autosize": true,
+                "symbol": first,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ko",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "calendar": false,
+                "support_host": "https://www.tradingview.com"
+            });
+            widgetWrapper.appendChild(script);
+
+            area.classList.remove('hidden');
+            showToast(`${first} 차트 로드 완료. 다른 종목은 개별 검색 추천`);
+
+            // Show analysis for the group
+            setTimeout(() => {
+                const analysisPanel = document.getElementById('custom-analysis-panel');
+                generateCustomInvestorAnalysis(checked.join(' + '), analysisPanel);
+            }, 800);
+        }
+
+        // Clear custom stock area
+        function clearCustomChart() {
+            const area = document.getElementById('custom-chart-area');
+            const container = document.getElementById('custom-chart-container');
+            const analysisPanel = document.getElementById('custom-analysis-panel');
+            
+            container.innerHTML = '';
+            analysisPanel.classList.add('hidden');
+            area.classList.add('hidden');
+        }
+
+        // Show detailed famous investor analysis
+        function showDetailedAnalysisForSearched() {
+            if (!currentSearchedTicker) {
+                showToast('먼저 개별 종목을 검색해주세요 (예: NVDA, TSLA, AAPL)');
+                document.getElementById('custom-search-section').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+            
+            const customArea = document.getElementById('custom-chart-area');
+            const analysisPanel = document.getElementById('custom-analysis-panel');
+            
+            customArea.classList.remove('hidden');
+            analysisPanel.classList.remove('hidden');
+            analysisPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight
+            analysisPanel.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.4)';
+            setTimeout(() => {
+                if (analysisPanel) analysisPanel.style.boxShadow = '';
+            }, 1800);
+        }
+
+        // Reset all compare selections
+        function clearAllCustom() {
+            clearCustomChart();
+            document.getElementById('comparison-result-panel').classList.add('hidden');
+            document.querySelectorAll('.compare-check').forEach(cb => cb.checked = false);
+            showToast('모든 커스텀 데이터 초기화 완료');
+        }
+
+        // Quick Parallel Comparison
+        function openQuickParallelComparison(compareTicker) {
+            if (!currentSearchedTicker) {
+                showToast('먼저 종목을 검색해주세요');
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-2 sm:p-4`;
+            modal.innerHTML = `
+                <div class="bg-[#0f172a] border border-slate-800 rounded-3xl w-[98%] max-w-[1600px] h-[96vh] overflow-hidden modal flex flex-col">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 flex-shrink-0">
+                        <div class="font-bold text-xl text-white">
+                            ${currentSearchedTicker} vs ${compareTicker} <span class="text-sm text-emerald-400 font-normal">(병렬 비교)</span>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" class="text-3xl leading-none text-slate-400 hover:text-white px-2">&times;</button>
+                    </div>
+                    
+                    <div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow overflow-hidden" style="min-height: 300px;">
+                        <!-- Left: Searched Ticker -->
+                        <div class="flex flex-col h-full">
+                            <div class="text-sm font-semibold mb-2 px-1 text-emerald-400">${currentSearchedTicker}</div>
+                            <div id="parallel-left" class="tradingview-widget-container flex-grow h-full w-full"></div>
+                        </div>
+                        
+                        <!-- Right: Comparison Ticker -->
+                        <div class="flex flex-col h-full">
+                            <div class="text-sm font-semibold mb-2 px-1 text-emerald-400">${compareTicker}</div>
+                            <div id="parallel-right" class="tradingview-widget-container flex-grow h-full w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load left chart
+            const leftDiv = modal.querySelector('#parallel-left');
+            leftDiv.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+            const leftScript = document.createElement('script');
+            leftScript.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            leftScript.innerHTML = JSON.stringify({
+                "autosize": true, "symbol": currentSearchedTicker, "interval": "D",
+                "theme": "dark", "style": "1", "locale": "ko"
+            });
+            leftDiv.appendChild(leftScript);
+            
+            // Load right chart
+            const rightDiv = modal.querySelector('#parallel-right');
+            rightDiv.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+            const rightScript = document.createElement('script');
+            rightScript.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            rightScript.innerHTML = JSON.stringify({
+                "autosize": true, "symbol": compareTicker, "interval": "D",
+                "theme": "dark", "style": "1", "locale": "ko"
+            });
+            rightDiv.appendChild(rightScript);
+        }
+
+        // Side-by-Side Parallel Comparison
+        function openSideBySideComparison(mainTicker) {
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-2 sm:p-4`;
+            modal.innerHTML = `
+                <div class="bg-[#0f172a] border border-slate-800 rounded-3xl w-[98%] max-w-[1600px] h-[96vh] overflow-hidden modal flex flex-col">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 flex-shrink-0">
+                        <div>
+                            <div class="font-bold text-xl text-white">병렬 비교 (Side-by-Side)</div>
+                            <div class="text-xs text-emerald-400 font-normal">${mainTicker} vs 비교 종목</div>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" class="text-3xl leading-none text-slate-400 hover:text-white px-2">&times;</button>
+                    </div>
+                    
+                    <div class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow overflow-hidden" style="min-height: 300px;">
+                        <!-- Left Chart: Main Ticker -->
+                        <div class="flex flex-col h-full">
+                            <div class="text-sm font-semibold mb-2 text-emerald-400 px-1">${mainTicker}</div>
+                            <div id="side-left-chart" class="tradingview-widget-container flex-grow h-full w-full"></div>
+                        </div>
+                        
+                        <!-- Right Chart: Comparison (default SPY) -->
+                        <div class="flex flex-col h-full">
+                            <div class="flex items-center justify-between mb-2 px-1 flex-shrink-0">
+                                <div class="text-sm font-semibold text-emerald-400">비교 종목</div>
+                                <select id="compare-ticker-select" class="bg-slate-900 border border-slate-700 text-xs px-3 py-1.5 rounded-lg text-white font-mono outline-none">
+                                    <option value="SPY">SPY (S&P500)</option>
+                                    <option value="SCHD">SCHD (배당)</option>
+                                    <option value="QQQ">QQQ (성장)</option>
+                                    <option value="SMH">SMH (반도체)</option>
+                                    <option value="LIT">LIT (2차전지)</option>
+                                    <option value="XLY">XLY (전기차)</option>
+                                </select>
+                            </div>
+                            <div id="side-right-chart" class="tradingview-widget-container flex-grow h-full w-full"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="px-6 py-4 bg-[#090c14] border-t border-slate-800 text-xs text-slate-400 flex-shrink-0">
+                        두 그래프를 나란히 보면서 실시간으로 비교하세요. 오른쪽 비교 종목을 변경하면 자동으로 업데이트됩니다.
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load left chart (main ticker)
+            const leftWrapper = modal.querySelector('#side-left-chart');
+            leftWrapper.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+            const leftScript = document.createElement('script');
+            leftScript.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            leftScript.innerHTML = JSON.stringify({
+                "autosize": true,
+                "symbol": mainTicker,
+                "interval": "D",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ko",
+                "allow_symbol_change": true
+            });
+            leftWrapper.appendChild(leftScript);
+            
+            // Load right chart (default SPY)
+            const loadRightChart = (symbol) => {
+                const rightWrapper = modal.querySelector('#side-right-chart');
+                rightWrapper.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+                const rightScript = document.createElement('script');
+                rightScript.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+                rightScript.innerHTML = JSON.stringify({
+                    "autosize": true,
+                    "symbol": symbol,
+                    "interval": "D",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "allow_symbol_change": true
+                });
+                rightWrapper.appendChild(rightScript);
+            };
+            
+            loadRightChart('SPY');
+            
+            // Change handler for select
+            const select = modal.querySelector('#compare-ticker-select');
+            select.addEventListener('change', () => {
+                loadRightChart(select.value);
+            });
+        }
+
+        // Add button for multi-symbol comparison graph (one chart with overlay)
+        function addMultiCompareButton(ticker, parentArea) {
+            // Remove old button if exists
+            const oldBtn = document.getElementById('multi-compare-btn');
+            if (oldBtn) oldBtn.remove();
+
+            const btnContainer = document.createElement('div');
+            btnContainer.id = 'multi-compare-btn';
+            btnContainer.className = 'mt-5 flex flex-wrap gap-3';
+            btnContainer.innerHTML = `
+                <button onclick="openMultiSymbolCompareModal('${ticker}')" 
+                        class="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white transition-all rounded-2xl font-bold text-sm flex items-center justify-center gap-x-2 shadow-md">
+                    <i class="fas fa-chart-line"></i>
+                    <span>하나의 그래프에 여러 종목 오버레이 비교</span>
+                </button>
+                <div class="text-xs text-slate-400 self-center">SPY, SCHD, SMH, LIT 등과 한 차트에서 흐름 비교 가능</div>
+            `;
+            
+            // Insert after the analysis panel
+            const analysisPanel = document.getElementById('custom-analysis-panel');
+            if (analysisPanel && analysisPanel.parentNode) {
+                analysisPanel.parentNode.insertBefore(btnContainer, analysisPanel.nextSibling);
+            } else {
+                parentArea.appendChild(btnContainer);
+            }
+        }
+
+        // Open modal with advanced chart + instruction for multi-symbol overlay
+        let currentCompareModal = null;
+        
+        function openMultiSymbolCompareModal(mainTicker) {
+            const modal = document.createElement('div');
+            modal.className = `fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-2 sm:p-4`;
+            modal.innerHTML = `
+                <div class="bg-[#0f172a] border border-slate-800 rounded-3xl w-[98%] max-w-[1600px] h-[96vh] overflow-hidden modal flex flex-col">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 flex-shrink-0">
+                        <div>
+                            <div class="font-bold text-xl text-white">다중 종목 비교 그래프</div>
+                            <div class="text-xs text-emerald-400 font-normal">하나의 차트에서 여러 종목의 가격 흐름을 오버레이 비교</div>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" class="text-3xl leading-none text-slate-400 hover:text-white px-2">&times;</button>
+                    </div>
+                    
+                    <div class="p-4 flex-grow overflow-hidden" style="min-height: 300px;">
+                        <div id="compare-chart-wrapper" class="tradingview-widget-container h-full w-full"></div>
+                    </div>
+                    
+                    <div class="px-6 py-4 bg-[#090c14] border-t border-slate-800 flex-shrink-0">
+                        <div class="flex flex-col md:flex-row md:items-center gap-6 text-sm">
+                            <div class="flex-grow">
+                                <div class="font-bold text-emerald-400 mb-1">사용 방법</div>
+                                <div class="text-xs text-slate-300 leading-normal">
+                                    1. 차트가 로드되면 상단 툴바에서 <strong class="text-emerald-400">"Compare"</strong> 또는 <strong class="text-emerald-400">"+"</strong> 버튼 클릭<br>
+                                    2. 비교할 종목 입력 (예: SPY, SCHD, SMH, LIT, XLY, QQQ)<br>
+                                    3. 색상별로 여러 종목의 흐름을 한눈에 비교 가능 (가격 또는 % 변동)
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <div class="text-xs text-slate-400 mb-1.5 font-bold">추천 비교 조합</div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button onclick="addCompareSymbolToChart(this, 'SPY')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">+ SPY</button>
+                                    <button onclick="addCompareSymbolToChart(this, 'SCHD')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">+ SCHD</button>
+                                    <button onclick="addCompareSymbolToChart(this, 'SMH')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">+ SMH</button>
+                                    <button onclick="addCompareSymbolToChart(this, 'LIT')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">+ LIT</button>
+                                    <button onclick="addCompareSymbolToChart(this, 'XLY')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">+ XLY</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-[10px] text-slate-500">※ TradingView의 강력한 Compare 기능을 활용합니다. 색상, 스케일(%), 이동평균 등을 자유롭게 조정하세요.</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            currentCompareModal = modal;
+            
+            // Load the main ticker chart in the modal
+            const wrapper = modal.querySelector('#compare-chart-wrapper');
+            const widgetDiv = document.createElement('div');
+            widgetDiv.className = 'tradingview-widget-container h-full w-full';
+            widgetDiv.innerHTML = `<div class="tradingview-widget-container__widget h-full w-full"></div>`;
+            wrapper.appendChild(widgetDiv);
+            
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            script.innerHTML = JSON.stringify({
+                "autosize": true,
+                "symbol": mainTicker,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ko",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "calendar": false,
+                "support_host": "https://www.tradingview.com",
+                "hide_volume": false
+            });
+            widgetDiv.appendChild(script);
+        }
+        
+        // Helper to suggest adding compare
+        function addCompareSymbolToChart(btn, symbol) {
+            btn.style.backgroundColor = '#10b981';
+            btn.style.color = 'white';
+            btn.innerHTML = `✓ ${symbol} 추가됨 (차트에서 Compare 클릭)`;
+            setTimeout(() => {
+                if (btn && btn.parentNode) {
+                    btn.style.transition = 'all 0.3s';
+                    btn.style.opacity = '0.6';
+                }
+            }, 1200);
+            
+            showToast(`${symbol} 비교를 위해 차트 상단 Compare 버튼을 클릭하세요`);
+        }
+        
+        // Boot
+        window.onload = initializeDashboard;
+        
+        // Expose functions for advanced control
+        window.Dashboard = {
+            switchTab: switchChartTab,
+            showSector: (sym, title) => showSectorChart(sym, title),
+            save: saveDashboard
+        };
+
+        // Global variable to track the last searched individual stock
+        let currentSearchedTicker = null;
+
+        // ==================== FULL REBALANCING TOOL (INLINE MODAL) ====================
+        function openRebalancingTool() {
+            const modal = document.createElement('div');
+            modal.id = 'rebalancing-modal';
+            modal.className = 'fixed inset-0 bg-black/85 z-[200] flex items-center justify-center p-2 sm:p-4';
+            modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="bg-[#0f172a] border border-slate-800 rounded-3xl w-[98%] max-w-[1100px] max-h-[96vh] overflow-hidden modal flex flex-col" onclick="event.stopPropagation()">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 flex-shrink-0">
+                        <div>
+                            <div class="font-bold text-xl text-white flex items-center gap-x-2"><i class="fas fa-calculator text-emerald-400"></i> 포트폴리오 리밸런싱 도구</div>
+                            <div class="text-xs text-slate-400">보유 종목·금액·목표 비중을 입력하면 매매 계획을 자동으로 계산합니다</div>
+                        </div>
+                        <button onclick="this.closest('#rebalancing-modal').remove()" class="text-3xl leading-none text-slate-400 hover:text-white px-2">&times;</button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="flex-grow overflow-y-auto p-6 space-y-6" id="rb-body">
+
+                        <!-- Input Table -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="text-sm font-bold text-white">보유 종목 입력</div>
+                                <button onclick="rbAddRow()" class="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all flex items-center gap-x-1"><i class="fas fa-plus text-[10px]"></i> 종목 추가</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm" id="rb-table">
+                                    <thead>
+                                        <tr class="text-xs text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                            <th class="text-left pb-2 pr-2">티커</th>
+                                            <th class="text-right pb-2 px-2">현재 보유 금액 ($)</th>
+                                            <th class="text-right pb-2 px-2">목표 비중 (%)</th>
+                                            <th class="text-right pb-2 pl-2 w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rb-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Preset Buttons -->
+                        <div>
+                            <div class="text-xs text-slate-400 mb-2">빠른 프리셋 적용</div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="rbApplyPreset('conservative')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">보수형 (SPY40 SCHD45 QQQ15)</button>
+                                <button onclick="rbApplyPreset('balanced')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-violet-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">균형형 (SPY35 SCHD35 QQQ30)</button>
+                                <button onclick="rbApplyPreset('aggressive')" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 rounded-xl transition-all">공격형 (SPY25 SCHD20 QQQ55)</button>
+                            </div>
+                        </div>
+
+                        <!-- Calculate Button -->
+                        <div class="text-center">
+                            <button onclick="rbCalculate()" class="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-x-2 mx-auto">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>리밸런싱 계산 실행</span>
+                            </button>
+                        </div>
+
+                        <!-- Result Area -->
+                        <div id="rb-result" class="hidden space-y-6"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Initialize default rows
+            rbInitRows();
+        }
+
+        // Row counter
+        let rbRowId = 0;
+
+        function rbInitRows() {
+            const tbody = document.getElementById('rb-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            rbRowId = 0;
+            const defaults = [
+                { ticker: 'SPY', value: 40000, target: 35 },
+                { ticker: 'SCHD', value: 28000, target: 30 },
+                { ticker: 'QQQ', value: 18000, target: 20 },
+                { ticker: 'TSLL', value: 9000, target: 5 },
+                { ticker: '', value: 5000, target: 10 }
+            ];
+            defaults.forEach(d => rbAddRow(d.ticker, d.value, d.target));
+        }
+
+        function rbAddRow(ticker = '', value = '', target = '') {
+            const tbody = document.getElementById('rb-table-body');
+            if (!tbody) return;
+            const id = rbRowId++;
+            const tr = document.createElement('tr');
+            tr.id = 'rb-row-' + id;
+            tr.className = 'border-b border-slate-800/50';
+            tr.innerHTML = `
+                <td class="py-2 pr-2"><input type="text" value="${ticker}" placeholder="예: AAPL" class="w-full bg-[#161d30] border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder:text-slate-600 outline-none rb-ticker"></td>
+                <td class="py-2 px-2"><input type="number" value="${value}" placeholder="10000" min="0" class="w-full bg-[#161d30] border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm font-mono text-white text-right placeholder:text-slate-600 outline-none rb-value"></td>
+                <td class="py-2 px-2"><input type="number" value="${target}" placeholder="25" min="0" max="100" class="w-full bg-[#161d30] border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm font-mono text-white text-right placeholder:text-slate-600 outline-none rb-target"></td>
+                <td class="py-2 pl-2 text-center"><button onclick="document.getElementById('rb-row-${id}').remove()" class="text-slate-500 hover:text-rose-400 transition-colors" title="삭제"><i class="fas fa-trash-alt text-xs"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function rbApplyPreset(type) {
+            const presets = {
+                conservative: [
+                    { ticker: 'SPY', value: 40000, target: 40 },
+                    { ticker: 'SCHD', value: 45000, target: 45 },
+                    { ticker: 'QQQ', value: 15000, target: 15 }
+                ],
+                balanced: [
+                    { ticker: 'SPY', value: 35000, target: 35 },
+                    { ticker: 'SCHD', value: 35000, target: 35 },
+                    { ticker: 'QQQ', value: 30000, target: 30 }
+                ],
+                aggressive: [
+                    { ticker: 'SPY', value: 25000, target: 25 },
+                    { ticker: 'SCHD', value: 20000, target: 20 },
+                    { ticker: 'QQQ', value: 55000, target: 55 }
+                ]
+            };
+            const data = presets[type];
+            if (!data) return;
+            const tbody = document.getElementById('rb-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            rbRowId = 0;
+            data.forEach(d => rbAddRow(d.ticker, d.value, d.target));
+            showToast('프리셋 적용 완료: ' + type);
+        }
+
+        function rbCalculate() {
+            const rows = document.querySelectorAll('#rb-table-body tr');
+            const items = [];
+            let totalValue = 0;
+            let totalTarget = 0;
+
+            rows.forEach(row => {
+                const ticker = (row.querySelector('.rb-ticker')?.value || '').trim().toUpperCase();
+                const value = parseFloat(row.querySelector('.rb-value')?.value) || 0;
+                const target = parseFloat(row.querySelector('.rb-target')?.value) || 0;
+                if (ticker && value > 0) {
+                    items.push({ ticker, value, target });
+                    totalValue += value;
+                    totalTarget += target;
+                }
+            });
+
+            if (items.length === 0) {
+                showToast('최소 1개 이상의 유효한 종목을 입력하세요');
+                return;
+            }
+
+            if (Math.abs(totalTarget - 100) > 0.5) {
+                showToast(`목표 비중 합계가 ${totalTarget.toFixed(1)}% 입니다. 100%에 맞춰주세요.`);
+            }
+
+            // Calculate current % and deviation
+            items.forEach(item => {
+                item.currentPct = (item.value / totalValue) * 100;
+                item.targetValue = totalValue * (item.target / 100);
+                item.deviation = item.currentPct - item.target;
+                item.tradeAmount = item.targetValue - item.value;
+            });
+
+            // Build result
+            const resultDiv = document.getElementById('rb-result');
+            resultDiv.classList.remove('hidden');
+
+            // -- PIE CHARTS --
+            const pieColors = ['#10b981','#8b5cf6','#f59e0b','#ef4444','#38bdf8','#f472b6','#a3e635','#06b6d4','#e879f9','#fb923c'];
+
+            function drawPie(canvasId, data, labels) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width, H = canvas.height;
+                const cx = W / 2, cy = H / 2, R = Math.min(cx, cy) - 30;
+                ctx.clearRect(0, 0, W, H);
+                const total = data.reduce((s, v) => s + v, 0);
+                if (total <= 0) return;
+                let startAngle = -Math.PI / 2;
+                data.forEach((val, i) => {
+                    const sliceAngle = (val / total) * 2 * Math.PI;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.arc(cx, cy, R, startAngle, startAngle + sliceAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = pieColors[i % pieColors.length];
+                    ctx.fill();
+                    // Label
+                    if (val / total > 0.04) {
+                        const midAngle = startAngle + sliceAngle / 2;
+                        const lx = cx + (R * 0.65) * Math.cos(midAngle);
+                        const ly = cy + (R * 0.65) * Math.sin(midAngle);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 11px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(labels[i], lx, ly);
+                    }
+                    startAngle += sliceAngle;
+                });
+            }
+
+            // -- TRADE TABLE --
+            let tradeRows = '';
+            items.forEach(item => {
+                const devColor = item.deviation > 1 ? 'text-rose-400' : item.deviation < -1 ? 'text-sky-400' : 'text-slate-300';
+                const tradeColor = item.tradeAmount > 0 ? 'text-emerald-400' : item.tradeAmount < 0 ? 'text-rose-400' : 'text-slate-400';
+                const tradeLabel = item.tradeAmount > 0 ? 'BUY' : item.tradeAmount < 0 ? 'SELL' : '-';
+                const tradeBg = item.tradeAmount > 0 ? 'bg-emerald-500/10 border-emerald-500/20' : item.tradeAmount < 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-slate-800 border-slate-700';
+                tradeRows += `
+                    <tr class="border-b border-slate-800/50">
+                        <td class="py-2 pr-2 font-mono font-bold text-white">${item.ticker}</td>
+                        <td class="py-2 px-2 text-right font-mono text-slate-300">$${item.value.toLocaleString()}</td>
+                        <td class="py-2 px-2 text-right font-mono text-slate-300">${item.currentPct.toFixed(1)}%</td>
+                        <td class="py-2 px-2 text-right font-mono text-emerald-400">${item.target.toFixed(1)}%</td>
+                        <td class="py-2 px-2 text-right font-mono ${devColor}">${item.deviation > 0 ? '+' : ''}${item.deviation.toFixed(1)}%</td>
+                        <td class="py-2 px-2 text-right"><span class="text-[10px] px-2 py-0.5 ${tradeBg} ${tradeColor} rounded-full font-bold border">${tradeLabel}</span></td>
+                        <td class="py-2 pl-2 text-right font-mono font-bold ${tradeColor}">$${Math.abs(item.tradeAmount).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}</td>
+                    </tr>`;
+            });
+
+            resultDiv.innerHTML = `
+                <!-- Pie Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">현재 비중</div>
+                        <canvas id="rb-pie-current" width="260" height="260" class="mx-auto"></canvas>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">목표 비중</div>
+                        <canvas id="rb-pie-target" width="260" height="260" class="mx-auto"></canvas>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-3 justify-center">
+                    ${items.map((item, i) => `<div class="flex items-center gap-x-1.5 text-xs"><span class="w-3 h-3 rounded-sm" style="background:${pieColors[i % pieColors.length]}"></span><span class="text-slate-300 font-mono font-bold">${item.ticker}</span></div>`).join('')}
+                </div>
+
+                <!-- Trade Table -->
+                <div>
+                    <div class="text-sm font-bold text-white mb-3 flex items-center gap-x-2"><i class="fas fa-exchange-alt text-emerald-400"></i> 매매 계획 상세</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <th class="text-left pb-2">티커</th>
+                                    <th class="text-right pb-2">현재 금액</th>
+                                    <th class="text-right pb-2">현재 비중</th>
+                                    <th class="text-right pb-2">목표 비중</th>
+                                    <th class="text-right pb-2">괴리도</th>
+                                    <th class="text-right pb-2">매매</th>
+                                    <th class="text-right pb-2">매매 금액</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tradeRows}</tbody>
+                            <tfoot>
+                                <tr class="border-t border-slate-700">
+                                    <td class="pt-2 font-bold text-white">합계</td>
+                                    <td class="pt-2 text-right font-mono text-white font-bold">$${totalValue.toLocaleString()}</td>
+                                    <td class="pt-2 text-right font-mono text-white">100%</td>
+                                    <td class="pt-2 text-right font-mono text-emerald-400">${totalTarget.toFixed(1)}%</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Advice -->
+                <div class="bg-emerald-950/20 border border-emerald-900/40 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
+                    <strong class="text-emerald-400">거장 투자자 조언:</strong><br>
+                    • <strong class="text-amber-400">버핏</strong>: 과비중 종목이 경제적 해자가 약하다면 과감히 줄이고, 핵심 우량 자산(SPY/SCHD)에 집중하세요.<br>
+                    • <strong class="text-rose-400">달리오</strong>: 리밸런싱의 핵심은 상관관계가 낮은 자산 간의 균형을 유지하는 것입니다. 분기마다 5% 이상 괴리가 발생하면 조정하세요.<br>
+                    • <strong class="text-sky-400">그레이엄</strong>: 안전마진이 좁아진 종목을 매도하고, 내재가치 대비 할인된 우량주에 재투자하십시오.<br>
+                    • <strong class="text-violet-400">린치</strong>: 과비중 종목이 여전히 '성장 스토리'가 유효하다면 서두르지 마세요. 스토리가 훼손될 때 매도하는 것이 핵심입니다.
+                </div>
+
+                <div class="text-[10px] text-slate-500 text-center">※ 본 도구는 교육 목적의 시뮬레이션입니다. 실제 매매 시 수수료, 세금, 시장 상황을 반드시 고려하세요.</div>
+            `;
+
+            // Draw pies after DOM update
+            requestAnimationFrame(() => {
+                drawPie('rb-pie-current', items.map(i => i.value), items.map(i => i.ticker));
+                drawPie('rb-pie-target', items.map(i => i.target), items.map(i => i.ticker));
+            });
+
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    </script>
+</body>
+</html>
